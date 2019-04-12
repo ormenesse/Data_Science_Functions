@@ -10,7 +10,7 @@ import numpy as np
 from sklearn.feature_selection import mutual_info_classif
 from sklearn.preprocessing import KBinsDiscretizer
 
-def analise_temporal_base(X,X_perc=0.25,coluna_target=None,coluna_mes='NUM_MES_REF',
+def analise_temporal_base(X,X_perc=0.25,coluna_target=None,coluna_mes='mes',
                           dsvpd_thr=0.25,nome_arquivo="analise_dados_mes",MI=False,
                           Fast_Analysis=False,log_cat=False,log_fig=False,
                           transpor=False,subs_miss_espec=True,vetor_esp_missing=[-1,-9,-99,-999,-999999999]):
