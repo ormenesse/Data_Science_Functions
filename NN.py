@@ -100,13 +100,13 @@ index_train = df.index.difference(index_test)
 len(index_test),len(index_train),len(index_test)+len(index_train),df.shape
 #fit
 merged.fit([nn_base[vars_modelo_nn].loc[index_train].values,nn_base[vars_modelo_nn].loc[index_train].values], 
-           nn_base[['BAD_6_0','BAD_6']].loc[index_train].values, 
+           nn_base[['target_0','target']].loc[index_train].values, 
               epochs=40,
               batch_size=2048,
               shuffle=True,
               callbacks=[checkpoint],
               validation_data=([nn_base[vars_modelo_nn].loc[index_test].values,nn_base[vars_modelo_nn].loc[index_test].values], 
-                               nn_base[['BAD_6_0','BAD_6']].loc[index_test].values)
+                               nn_base[['target_0','target']].loc[index_test].values)
              )
 nn_predictions = merged.predict_proba([nn_base[vars_modelo_nn].values,nn_base[vars_modelo_nn].values])
 
@@ -156,11 +156,11 @@ class roc_callback(Callback):
 
 
 riskmodel.compile(loss='binary_crossentropy', optimizer='adam',metrics=['accuracy',metrics.binary_crossentropy])
-riskmodel.fit(nn_base[vars_modelo_nn].loc[index_train].values, nn_base[['BAD_6_0','BAD_6']].loc[index_train].values, 
+riskmodel.fit(nn_base[vars_modelo_nn].loc[index_train].values, nn_base[['target_0','target']].loc[index_train].values, 
               epochs=100,
               batch_size=2048,
               shuffle=True,
-              validation_data=(nn_base[vars_modelo_nn].loc[index_test].values, nn_base[['BAD_6_0','BAD_6']].loc[index_test].values)
-              #,callbacks=[roc_callback(training_data=(nn_base[vars_modelo_nn].loc[index_train].values, nn_base[['BAD_6_0','BAD_6']].loc[index_train].values),
-              #           validation_data=(nn_base[vars_modelo_nn].loc[index_test].values, nn_base[['BAD_6_0','BAD_6']].loc[index_test].values))]
+              validation_data=(nn_base[vars_modelo_nn].loc[index_test].values, nn_base[['target_0','target']].loc[index_test].values)
+              #,callbacks=[roc_callback(training_data=(nn_base[vars_modelo_nn].loc[index_train].values, nn_base[['target_0','target']].loc[index_train].values),
+              #           validation_data=(nn_base[vars_modelo_nn].loc[index_test].values, nn_base[['target_0','target']].loc[index_test].values))]
              )
