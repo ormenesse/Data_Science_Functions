@@ -102,6 +102,16 @@ def min_max_norm(B,categorical_columns):
             X[col]=(X[col]-X[col].min())/(X[col].max()-X[col].min())
     return X , norm
 
+def std_norm(B,categorical_columns):
+    X = B.copy()
+    norm = {}
+    for col in X.columns:
+        if col in categorical_columns:
+            norm[col] = [X[col].min(),X[col].max(),1,0]
+        else:
+            norm[col] = [X[col].min(),X[col].max(),X[col].std(),X[col].mean()]
+            X[col]=(X[col]-X[col].mean())/(X[col].std())
+    return X , norm
 
 def cria_matriz_correlacao(df):
     correlations = df.corr()
