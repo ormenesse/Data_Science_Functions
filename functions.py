@@ -1,22 +1,17 @@
+from pandas.api.types import is_numeric_dtype
+from scipy.spatial.distance import cdist
+from sklearn.feature_selection import RFECV
+from sklearn.metrics import accuracy_score, confusion_matrix, matthews_corrcoef, roc_auc_score, roc_curve 
+from sklearn.model_selection import cross_val_score, train_test_split, cross_val_predict, KFold, GridSearchCV, train_test_split
+from sklearn.preprocessing import LabelEncoder
+import lightgbm as lgb
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
-from sklearn.preprocessing import LabelEncoder
 import pickle
-from scipy.spatial.distance import cdist
-from pandas.api.types import is_numeric_dtype
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import cross_val_score, train_test_split, cross_val_predict
-from sklearn.metrics import roc_auc_score
-import lightgbm as lgb
-from sklearn.metrics import confusion_matrix
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import roc_auc_score
-from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import matthews_corrcoef
-from sklearn.metrics import roc_curve
+import ppscore as pps
 import random
+import seaborn as sns
 
 class CatEncoder():
     """Semelhante ao LabelEncoder do SKLEARN mas funciona com categorias ineditas.
@@ -126,6 +121,12 @@ def cria_matriz_correlacao(df):
     ax.set_yticklabels(df.columns,ma='center',size='medium')
     plt.show()
     
+def cria_matriz_pps(df):
+    correlations = pps.matrix(df).pivot(columns='x', index='y',  values='ppscore')
+    plt.figure(figsize=(20,20))
+    sns.heatmap(correlations, annot=True)
+    #plt.show()
+    
 def exclui_vars_correlacionadas(db,frac=1):
     correlacao = db.sample(frac=frac).corr().abs()
     corrs = [] #variaveis correlacionadas
@@ -157,7 +158,7 @@ def limiar_escore(modelo,df_verificacao,df_target):
     fpr, tpr, threshold = roc_curve(df_target, predictions[:,1])
     i = np.arange(len(tpr)) 
     roc = pd.DataFrame({'tf' : pd.Series(tpr-(1-fpr), index=i), 'threshold' : pd.Series(threshold, index=i)})
-    roc_t = roc.ix[(roc.tf-0).abs().argsort()[:1]]
+    roc_t = roc.loc[(roc.tf-0).abs().argsort()[:1]]
     print('Limiar que maxima especificidade e sensitividade:')
     print(list(roc_t['threshold']))
     #analisando modelo com novo limiar
@@ -170,6 +171,7 @@ def limiar_escore(modelo,df_verificacao,df_target):
     print('Recall',Recall)
     print('Acuracia',acuracia)
     print('F-Score',F)
+    print('Roc-AUC', roc_auc_score(df_target, predictions[:,1]))
 
 def retorna_limiar_escore(modelo,df_verificacao,df_target):
     #Imprimindo limiar de Escore
@@ -177,10 +179,10 @@ def retorna_limiar_escore(modelo,df_verificacao,df_target):
     fpr, tpr, threshold = roc_curve(df_target, predictions[:,1])
     i = np.arange(len(tpr)) 
     roc = pd.DataFrame({'tf' : pd.Series(tpr-(1-fpr), index=i), 'threshold' : pd.Series(threshold, index=i)})
-    roc_t = roc.ix[(roc.tf-0).abs().argsort()[:1]]
+    roc_t = roc.loc[(roc.tf-0).abs().argsort()[:1]]
     return list(roc_t['threshold'])[0]
     
-def kfoldcv(indices, k = 5, seed = 4242):
+def kfoldcv(indices, k = 5, seed = 4242, how='tuple'):
     
     size = len(indices)
     subset_size = round(size / k)
@@ -188,6 +190,7 @@ def kfoldcv(indices, k = 5, seed = 4242):
     subsets = [indices[x:x+subset_size] for x in range(0, len(indices), subset_size)]
     test = []
     train = []
+    tupleTrainTest = []
     for i in range(k):
         test.append(subsets[i])
         trainz = np.array([])
@@ -195,10 +198,17 @@ def kfoldcv(indices, k = 5, seed = 4242):
             if i != j:
                 trainz = np.concatenate((trainz,subset),axis=0)
         train.append(list(trainz))
-    return train,test
-
-def display_side_by_side(*args):
-    html_str=''
-    for df in args:
-        html_str+=df.to_html()
-    display_html(html_str.replace('table','table style="display:inline"'),raw=True)
+        
+        tupleTrainTest.append((train[-1],test[-1]))
+        
+    if how == 'tuple':
+        
+        return tupleTrainTest
+    
+    elif how == 'array':
+        
+        return train,test
+    
+    else:
+        
+        return tupleTrainTest
