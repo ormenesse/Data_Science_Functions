@@ -127,14 +127,17 @@ def cria_matriz_pps(df):
     sns.heatmap(correlations, annot=True)
     #plt.show()
     
-def exclui_vars_correlacionadas(db,frac=1):
+def exclui_vars_correlacionadas(db,frac=1,corrFactor=0.95):
     correlacao = db.sample(frac=frac).corr().abs()
     corrs = [] #variaveis correlacionadas
+    keep = []
     for i,c in enumerate(correlacao.iterrows()):
         for j,czinho in enumerate(c[1]):
-            if czinho >= 0.9 and i != j:
+            if czinho >= corrFactor and i != j and c[1].index[j] not in keep:
+                
+                keep.append(c[1].index[i])
                 corrs.append(c[1].index[j])
-                print(c[1].index[i],'->',c[1].index[i])
+                print(c[1].index[i],'->',c[1].index[j])
     return corrs
 
 def cria_curva_roc_auc(modelo,df_verificacao,df_target):
