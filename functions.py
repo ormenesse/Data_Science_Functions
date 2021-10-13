@@ -127,18 +127,35 @@ def cria_matriz_pps(df):
     sns.heatmap(correlations, annot=True)
     #plt.show()
     
-def exclui_vars_correlacionadas(db,frac=1,corrFactor=0.95):
-    correlacao = db.sample(frac=frac).corr().abs()
-    corrs = [] #variaveis correlacionadas
-    keep = []
-    for i,c in enumerate(correlacao.iterrows()):
-        for j,czinho in enumerate(c[1]):
-            if czinho >= corrFactor and i != j and c[1].index[j] not in keep:
-                
-                keep.append(c[1].index[i])
-                corrs.append(c[1].index[j])
-                print(c[1].index[i],'->',c[1].index[j])
-    return corrs
+def exclui_vars_correlacionadas(db,y=None,frac=1,corrFactor=0.95):
+    if y == None:
+        correlacao = db.sample(frac=frac).corr().abs()
+        corrs = [] #variaveis correlacionadas
+        keep = []
+        for i,c in enumerate(correlacao.iterrows()):
+            for j,czinho in enumerate(c[1]):
+                if czinho >= corrFactor and i != j:
+                    if c[1].index[i] not in keep and c[1].index[i] not in corrs:
+                        keep.append(c[1].index[i])
+                        corrs.append(c[1].index[j])
+                        #print(c[1].index[i],'->',c[1].index[j])
+        return list(set(keep))
+    else:
+        correlacao = db.sample(frac=frac).corr().abs()
+        corrs = [] #variaveis correlacionadas
+        keep = []
+        for i,c in enumerate(correlacao.iterrows()):
+            currentRow = c[0]
+            for j,czinho in enumerate(c[1]):
+                if czinho >= corrFactor and i != j:
+                    if c[1].index[i] not in keep and c[1].index[i] not in corrs:
+                        if correlacao[y].loc[currentRow] > correlacao[y].loc[c[1].index[j]]:
+                            keep.append(c[1].index[i])
+                            corrs.append(c[1].index[j])
+                        else:
+                            keep.append(c[1].index[j])
+                            corrs.append(c[1].index[i])                 
+        return list(set(keep))
 
 def cria_curva_roc_auc(modelo,df_verificacao,df_target):
     predictions = modelo.predict_proba(df_verificacao)
