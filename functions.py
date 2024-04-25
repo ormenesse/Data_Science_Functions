@@ -4,6 +4,7 @@ from sklearn.feature_selection import RFECV
 from sklearn.metrics import accuracy_score, confusion_matrix, matthews_corrcoef, roc_auc_score, roc_curve 
 from sklearn.model_selection import cross_val_score, train_test_split, cross_val_predict, KFold, GridSearchCV, train_test_split
 from sklearn.preprocessing import LabelEncoder
+from scipy.stats import ks_2samp
 import lightgbm as lgb
 import matplotlib.pyplot as plt
 import numpy as np
@@ -192,6 +193,58 @@ def limiar_escore(modelo,df_verificacao,df_target):
     print('Acuracia',acuracia)
     print('F-Score',F)
     print('Roc-AUC', roc_auc_score(df_target, predictions[:,1]))
+
+def df_limiar_escore(df_verificacao,df_target,_print=True):
+  #Imprimindo limiar de Escore
+  predictions = df_verificacao
+    try:
+        fpr, tpr, threshold = roc_curve(df_target, predictions)
+        i = np.arange(len(tpr)) 
+        roc = pd.DataFrame({'tf' : pd.Series(tpr-(1-fpr), index=i), 'threshold' : pd.Series(threshold, index=i)})
+        roc_t = roc.loc[(roc.tf-0).abs().argsort()[:1]]
+    except:
+        roc_t = pd.DataFrame([np.nan],columns=['threshold'])
+    #analisando modelo com novo limiar
+    try:
+        tn, fp, fn, tp = confusion_matrix(df_target, [1 if item>=list(roc_t['threshold'])[0] else 0 for item in predictions]).ravel()
+        Precision = tp/(tp+fp)
+        Recall = tp/(tp+fn)
+        acuracia = (tp+tn)/(tn+fp+fn+tp)
+        F = (2*Precision*Recall)/(Precision+Recall)
+    except:
+        Precision = np.nan
+        Recall = np.nan
+        acuracia = np.nan
+        F = np.nan
+    try:
+        roc = roc_auc_score(df_target, predictions)
+    except:
+        roc = np.nan
+    try:
+        ks = ks_2samp(df_target, predictions)
+    except:
+        ks = (np.nan, np.nan)
+    if _print:
+        print('Limiar que maxima especificidade e sensitividade:')
+        print(list(roc_t['threshold']))
+        print('Precision',Precision)
+        print('Recall',Recall)
+        print('Acuracia',acuracia)
+        print('F-Score',F)
+        print('Roc-AUC', roc)
+        print('KS', ks)
+    return {
+        'bestThreshold': list(roc_t['threshold'])[0],
+        'precision': Precision,
+        'recall': Recall,
+        'accuracy': acuracia,
+        'fscore': F,
+        'rocauc': roc,
+        'gini': 2*roc-1,
+        'ks': ks,
+        'classDist': df_target.value_counts(normalize=True).to_dict()
+      }
+
 
 def retorna_limiar_escore(modelo,df_verificacao,df_target):
     #Imprimindo limiar de Escore
